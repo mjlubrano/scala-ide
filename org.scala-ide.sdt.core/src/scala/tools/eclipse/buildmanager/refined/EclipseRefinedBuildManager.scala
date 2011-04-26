@@ -4,16 +4,14 @@ package refined
 
 import org.eclipse.core.resources.{ IFile, IMarker, IResource }
 import org.eclipse.core.runtime.IProgressMonitor
-
 import scala.collection.mutable.HashSet
-
 import scala.tools.nsc.{ Global, Settings, Phase }
 import scala.tools.nsc.interactive.{ BuildManager, RefinedBuildManager }
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.Reporter
-
 import scala.tools.eclipse.util.{ EclipseResource, FileUtils }
 import org.eclipse.core.runtime.{ SubMonitor, IPath, Path }
+import scala.tools.eclipse.util.ScalaPluginSettings
 
 class EclipseRefinedBuildManager(project: ScalaProject, settings0: Settings)
   extends RefinedBuildManager(settings0) with EclipseBuildManager {
@@ -69,6 +67,18 @@ class EclipseRefinedBuildManager(project: ScalaProject, settings0: Settings)
         }
       }
 
+    override def computeInternalPhases() {
+      super.computeInternalPhases
+
+      if(codeanalysis.CodeAnalysisExtensionPoint.isEnabled) {
+
+        val codeAnalysis = new codeanalysis.CodeAnalysisComponent {
+          val global: EclipseBuildCompiler.this.type = EclipseBuildCompiler.this
+        }
+
+        phasesSet += codeAnalysis
+      }
+    }
   }
 
   def build(addedOrUpdated: Set[IFile], removed: Set[IFile], submon: SubMonitor) {

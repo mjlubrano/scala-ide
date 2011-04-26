@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?eclipse version="3.2"?>
 <plugin>
+   <extension-point id="scalaCodeAnalysis" name="Scala Code Analysis" schema="schema/scalaCodeAnalysis.exsd"/>
    <extension
          point="org.eclipse.ui.propertyPages">
       <page
@@ -59,6 +60,11 @@
             id="org.scala-ide.sdt.core.preferences.Templates"
             name="Templates">
       </page>
+      <page 
+            category="org.scala-ide.sdt.core.preferences"
+            class="scala.tools.eclipse.properties.CodeAnalysisPreferences"
+            name="Code Analysis"
+            id="org.scala-ide.sdt.core.codeanalysispreferences"/>
    </extension>
 
 
@@ -998,5 +1004,28 @@
              type="__dftl_partition_content_type">
        </partition>
     </javaCompletionProposalComputer>
+ </extension>
+ <extension
+       id="scalaCodeAnalysisProblem"
+       name="Scala Code Analysis"
+       point="org.eclipse.core.resources.markers">
+    <super
+          type="org.eclipse.core.resources.problemmarker">
+    </super>
+    <persistent
+          value="false">
+    </persistent>
+ </extension>
+ <extension
+       point="org.scala-ide.sdt.core.scalaCodeAnalysis">
+    <analyzer
+          class="scala.tools.eclipse.codeanalysis.impls.UnusedImports"
+          id="org.scala-ide.sdt.core.codeanalysis.unusedimports"
+          name="Unused Imports">
+       <marker
+             id="org.scala-ide.sdt.core.scalaCodeAnalysisProblem"
+             severity="1">
+       </marker>
+    </analyzer>
  </extension>
 </plugin>
