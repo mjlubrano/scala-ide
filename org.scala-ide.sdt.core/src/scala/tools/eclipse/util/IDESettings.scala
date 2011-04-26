@@ -34,6 +34,10 @@ object IDESettings {
     List(Box("Scala Plugin Debugging", List(YPlugininfo)))    
   }
   
+  def codeAnalysisSettings: List[Box] = {
+    List(Box("Scala Code Analysis", List(codeAnalysis)))    
+  }
+  
   def buildManagerSettings: List[Box] = {
     List(Box("Build manager", List(buildManager)))    
   }
@@ -42,4 +46,5 @@ object IDESettings {
 object ScalaPluginSettings extends Settings {
   val YPlugininfo = BooleanSetting("-plugininfo", "Enable logging of the Scala Plugin info")
   val buildManager = ChoiceSetting("-buildmanager", "which", "Build manager to use", List("refined"), "refined")
+  val codeAnalysis = BooleanSetting("-codeanalysis", "Enable additional code analysis during compilation.")
 }
