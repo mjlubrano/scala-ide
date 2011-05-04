@@ -2,21 +2,22 @@
  * Copyright 2005-2010 LAMP/EPFL
  */
 
-package scala.tools.eclipse.refactoring
+package scala.tools.eclipse
+package refactoring
 
-import org.eclipse.text.edits.ReplaceEdit
-import org.eclipse.text.edits.MultiTextEdit
-import org.eclipse.ltk.core.refactoring.TextFileChange
-import org.eclipse.ui.PlatformUI
-import org.eclipse.ui.IWorkbenchWindow
-import org.eclipse.ui.IWorkbenchPage
-import org.eclipse.ui.IEditorPart
-import org.eclipse.ui.texteditor.ITextEditor
-import org.eclipse.ui.IFileEditorInput
+import org.eclipse.jface.text.IRegion
+
 import org.eclipse.core.resources.IFile
-import scala.tools.eclipse.ScalaSourceFileEditor
-import org.eclipse.jface.text.ITextSelection
+import org.eclipse.jface.text.{ITextSelection, IDocument}
+import org.eclipse.ltk.core.refactoring.TextFileChange
+import org.eclipse.text.edits.{MultiTextEdit, ReplaceEdit, RangeMarker}
+import org.eclipse.ui.texteditor.ITextEditor
+import org.eclipse.ui.{IFileEditorInput, IEditorPart, IWorkbenchPage, IWorkbenchWindow, PlatformUI}
 import scala.tools.eclipse.javaelements.ScalaSourceFile
+import scala.tools.eclipse.ScalaSourceFileEditor
+import scala.tools.nsc.io.AbstractFile
+import scala.tools.refactoring.common.Change
+import util.FileUtils
 
 object EditorHelpers {
    
@@ -26,7 +27,13 @@ object EditorHelpers {
   def textEditor(e: IEditorPart): Option[ScalaSourceFileEditor] = e match {case t: ScalaSourceFileEditor => Some(t) case _ => None}
   def file(e: ITextEditor): Option[IFile] = e.getEditorInput match {case f: IFileEditorInput => Some(f.getFile) case _ => None}
   def selection(e: ITextEditor): Option[ITextSelection] = e.getSelectionProvider.getSelection match {case s: ITextSelection => Some(s) case _ => None}
-  
+
+  /**
+   * Runs a function with the ScalaSourceFileEditor of the currently active editor.
+   * 
+   * @param block A function that is called with the ScalaSourceFileEditor.
+   * @return None when the current editor of the ScalaSourceFile cannot be found or is not a ScalaSourceFileEditor. Otherwise the result of applying block.
+   */ 
   def withCurrentEditor[T](block: ScalaSourceFileEditor => Option[T]): Option[T] = { 
     activeWorkbenchWindow flatMap { 
       activePage(_)         flatMap {
@@ -37,14 +44,27 @@ object EditorHelpers {
     }
   }
   
+  /**
+   * Runs a function with the ScalaSourceFile of the currently active editor.
+   * 
+   * @param block A function that is called with the ScalaSourceFile.
+   * @return None when the current editor of the ScalaSourceFile cannot be found. Otherwise the result of applying block.
+   */ 
   def withCurrentScalaSourceFile[T](block: ScalaSourceFile => T): Option[T] = {
     withCurrentEditor { textEditor =>
-      file(textEditor)      flatMap { file =>
+      file(textEditor) flatMap { file =>
         ScalaSourceFile.createFromPath(file.getFullPath.toString) map block
       }
     }
   }
   
+  /**
+   * Runs a function with the ScalaSourceFile and the selection (or simply the caret position) 
+   * of the currently active editor.
+   * 
+   * @param block A function that is called with the ScalaSourceFile and the selection.
+   * @return None when the current editor of the ScalaSourceFile cannot be found. Otherwise the result of applying block.
+   */
   def withScalaFileAndSelection[T](block: (ScalaSourceFile, ITextSelection) => Option[T]): Option[T] = {
     withCurrentEditor { textEditor =>
       file(textEditor) flatMap { file =>
@@ -57,6 +77,13 @@ object EditorHelpers {
     }
   }
   
+  /**
+   * Turns a list of changes from the refactoring library to proper Eclipse ReplaceEdit 
+   * and wraps them in a single TextFileChange.
+   * 
+   * @param file The IFile to create a TextFileChange for.
+   * @param fileChanges The changes the refactoring library generated.
+   */
   def createTextFileChange(file: IFile, fileChanges: List[scala.tools.refactoring.common.Change]): TextFileChange = {
     new TextFileChange(file.getName(), file) {
             
@@ -67,6 +94,55 @@ object EditorHelpers {
       } foreach fileChangeRootEdit.addChild
             
       setEdit(fileChangeRootEdit)
+    }
+  }
+  
+  /**
+   * Applies a list of refactoring changes to a document. The current selection (or just the caret position) 
+   * is tracked and restored after applying the changes. 
+   * 
+   * @param document The document the changes are applied to.
+   * @param textSelection The currently selected area of the document.
+   * @param file The file that we're currently editing (the document alone isn't enough because we need to get an IFile).
+   * @param changes The changes that should be applied.
+   */
+  def applyChangesToFileWhileKeepingSelection(document: IDocument, textSelection: ITextSelection, file: AbstractFile, changes: List[Change])  { 
+    
+    def selectionIsInManipulatedRegion(region: IRegion): Boolean = {
+      val (regionStart, regionEnd) = {
+        (region.getOffset, region.getOffset + region.getLength)
+      }
+      val (selectionStart, selectionEnd) = {
+        (textSelection.getOffset, textSelection.getOffset + textSelection.getLength)
+      }
+      selectionStart >= regionStart && selectionEnd <= regionEnd
+    }
+    
+    FileUtils.toIFile(file) foreach { f =>
+      createTextFileChange(f, changes).getEdit match {
+        // we know that it is a MultiTextEdit because we created it above
+        case edit: MultiTextEdit =>
+          
+          val selectionCannotBeRetained = edit.getChildren map (_.getRegion) exists selectionIsInManipulatedRegion
+          
+          val (selectionStart, selectionLength) = if(selectionCannotBeRetained) {
+            edit.apply(document)
+            // If we cannot track the selection, we just select the whole changed area.
+            // When organizing imports, this behavior is consistent with the JDT.
+            (edit.getOffset, edit.getLength)
+          } else {            
+            // Otherwise, we can track the selection and restore it after the refactoring.
+            val currentPosition = new RangeMarker(textSelection.getOffset, textSelection.getLength)
+            edit.addChild(currentPosition)
+            edit.apply(document)
+            (currentPosition.getOffset, currentPosition.getLength)
+          }
+          
+          withCurrentEditor { editor =>
+            editor.selectAndReveal(selectionStart, selectionLength)
+            None
+          }
+      }
     }
   }
 }
