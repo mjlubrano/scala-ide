@@ -7,6 +7,7 @@ import org.eclipse.jface.text.contentassist.IContextInformation
 import org.eclipse.jface.text.{TextUtilities, IDocument}
 import org.eclipse.swt.graphics.{Point, Image}
 import refactoring.EditorHelpers._
+import scala.tools.eclipse.refactoring.EditorHelpers
 import scala.tools.refactoring.implementations.AddImportStatement
 
 case class ImportCompletionProposal(val importName: String) extends IJavaCompletionProposal {

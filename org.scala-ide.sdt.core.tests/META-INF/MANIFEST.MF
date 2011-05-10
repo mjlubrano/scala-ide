@@ -1,15 +1,12 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: Scala Plugin
-Bundle-SymbolicName: org.scala-ide.sdt.core;singleton:=true
+Bundle-Name: Scala Plugin (Test)
+Bundle-SymbolicName: org.scala-ide.sdt.core.tests
 Bundle-Version: 2.0.0.qualifier
 Bundle-Vendor: scala-ide.org
-Bundle-ActivationPolicy: lazy
-Bundle-Localization: plugin
-Bundle-Activator: 
- scala.tools.eclipse.ScalaPlugin
-Require-Bundle: 
- org.eclipse.core.expressions,
+Fragment-Host: org.scala-ide.sdt.core
+Bundle-RequiredExecutionEnvironment: J2SE-1.5
+Require-Bundle: org.eclipse.core.expressions,
  org.eclipse.core.filesystem,
  org.eclipse.core.resources,
  org.eclipse.core.runtime,
@@ -63,17 +60,3 @@ Import-Package:
  scala.tools.eclipse.contribution.weaving.jdt.ui.javaeditor;apply-aspects:=false,
  scala.tools.eclipse.contribution.weaving.jdt.ui.javaeditor.formatter;apply-aspects:=false,
  com.ibm.icu.text;apply-aspects:=false
-Export-Package: 
- scala.tools.eclipse,
- scala.tools.eclipse.actions,
- scala.tools.eclipse.interpreter,
- scala.tools.eclipse.javaelements,
- scala.tools.eclipse.launching,
- scala.tools.eclipse.properties,
- scala.tools.eclipse.quickfix,
- scala.tools.eclipse.ui,
- scala.tools.eclipse.util,
- scala.tools.eclipse.wizards
-Bundle-RequiredExecutionEnvironment: J2SE-1.5
-Bundle-ClassPath: .,
- lib/miglayout-3.7.4-swt.jar

@@ -5,10 +5,21 @@
 package scala.tools.eclipse
 package refactoring
 
+
 import org.eclipse.jface.text.IRegion
 
 import org.eclipse.core.resources.IFile
 import org.eclipse.jface.text.{ITextSelection, IDocument}
+
+import org.eclipse.text.edits.RangeMarker
+import util.FileUtils
+import org.eclipse.jface.text.IRegion
+import scala.tools.refactoring.common.Change
+import scala.tools.nsc.io.AbstractFile
+import org.eclipse.jface.text.IDocument
+import org.eclipse.text.edits.ReplaceEdit
+import org.eclipse.text.edits.MultiTextEdit
+
 import org.eclipse.ltk.core.refactoring.TextFileChange
 import org.eclipse.text.edits.{MultiTextEdit, ReplaceEdit, RangeMarker}
 import org.eclipse.ui.texteditor.ITextEditor
@@ -126,10 +137,21 @@ object EditorHelpers {
           val selectionCannotBeRetained = edit.getChildren map (_.getRegion) exists selectionIsInManipulatedRegion
           
           val (selectionStart, selectionLength) = if(selectionCannotBeRetained) {
-            edit.apply(document)
-            // If we cannot track the selection, we just select the whole changed area.
-            // When organizing imports, this behavior is consistent with the JDT.
-            (edit.getOffset, edit.getLength)
+            // the selection overlaps the selected region, so we are on
+            // our own in trying to the preserve the user's selection.
+            if(edit.getOffset > textSelection.getOffset) {
+              edit.apply(document)
+              // if the edit starts after the start of the selection,
+              // we just keep the current selection
+              (textSelection.getOffset, textSelection.getLength)
+            } else {
+              // if the edit starts before the selection, we keep the
+              // selection relative to the end of the document.
+              val originalLength = document.getLength
+              edit.apply(document)
+              val modifiedLength = document.getLength
+              (textSelection.getOffset + (modifiedLength - originalLength), textSelection.getLength)
+            }              
           } else {            
             // Otherwise, we can track the selection and restore it after the refactoring.
             val currentPosition = new RangeMarker(textSelection.getOffset, textSelection.getLength)
