@@ -1049,13 +1049,10 @@
           name="Println Statement">
        <marker
              id="org.scala-ide.sdt.core.scalaCodeAnalysisProblem"
-             severity="2">
+             severity="0">
        </marker>
     </analyzer>
- </extension>
- <extension
-       point="org.scala-ide.sdt.core.scalaCodeAnalysis">
-    <analyzer
+        <analyzer
           class="scala.tools.eclipse.codeanalysis.analyzers.UnnecessaryPatternMatches"
           id="org.scala-ide.sdt.core.codeanalysis.UnnecessaryPatternMatches"
           name="Unnecessary Pattern Match">
