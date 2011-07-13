@@ -30,7 +30,8 @@ class ScalaPresentationCompiler(project : ScalaProject, settings : Settings)
   with ScalaOverrideIndicatorBuilder 
   with ScalaJavaMapper 
   with JVMUtils 
-  with LocateSymbol { self =>
+  with LocateSymbol 
+  with CommentToHtmlTransformer { self =>
   
   def presentationReporter = reporter.asInstanceOf[ScalaPresentationCompiler.PresentationReporter]
   presentationReporter.compiler = this
@@ -149,6 +150,8 @@ class ScalaPresentationCompiler(project : ScalaProject, settings : Settings)
     sourceFiles.keysIterator.foreach(_.scheduleReconcile)
     askShutdown
   }
+  
+  override def forScaladoc = true;
 }
 
 object ScalaPresentationCompiler {
