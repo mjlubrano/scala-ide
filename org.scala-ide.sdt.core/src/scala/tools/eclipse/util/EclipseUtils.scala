@@ -8,6 +8,9 @@ import org.eclipse.core.runtime.IAdaptable
 import PartialFunction._
 import org.eclipse.ui.IWorkbenchSite
 import org.eclipse.jdt.internal.ui.JavaPlugin
+import org.eclipse.core.resources.IWorkspace
+import org.eclipse.core.runtime.IProgressMonitor
+import org.eclipse.core.resources.IWorkspaceRunnable
 
 object EclipseUtils {
 
@@ -39,5 +42,18 @@ object EclipseUtils {
 		return part.getSite();
 	}
 	return null;
+  }
+
+  /** Run the given function as a workspace runnable inside `wspace`.
+   * 
+   * @param wspace the workspace
+   * @param monitor the progress monitor (defaults to null for no progress monitor).
+   */
+  def workspaceRunnableIn(wspace: IWorkspace, monitor: IProgressMonitor = null)(f: IProgressMonitor => Unit) = {
+    wspace.run(new IWorkspaceRunnable {
+      def run(monitor: IProgressMonitor) {
+        f(monitor)
+      }
+    }, monitor)
   }
 }
