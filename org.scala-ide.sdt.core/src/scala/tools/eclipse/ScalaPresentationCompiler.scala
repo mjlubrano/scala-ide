@@ -20,6 +20,7 @@ import scala.tools.eclipse.javaelements.{
   ScalaOverrideIndicatorBuilder }
 import scala.tools.eclipse.util.{ Cached, EclipseFile, EclipseResource }
 import scala.tools.nsc.util.FailedInterrupt
+import scala.tools.eclipse.scaladoc.ScalaCommentsExtractor
 
 class ScalaPresentationCompiler(project : ScalaProject, settings : Settings)
   extends Global(settings, new ScalaPresentationCompiler.PresentationReporter, project.underlying.getName)
@@ -30,7 +31,7 @@ class ScalaPresentationCompiler(project : ScalaProject, settings : Settings)
   with ScalaJavaMapper 
   with JVMUtils 
   with LocateSymbol 
-  with CommentToHtmlTransformer { self =>
+  with ScalaCommentsExtractor { self =>
   
   def presentationReporter = reporter.asInstanceOf[ScalaPresentationCompiler.PresentationReporter]
   presentationReporter.compiler = this
