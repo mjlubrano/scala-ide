@@ -8,7 +8,6 @@ package scala.tools.eclipse
 import org.eclipse.jdt.core.IJavaProject
 import scala.collection.mutable.HashMap
 import scala.util.control.ControlThrowable
-
 import org.eclipse.core.resources.{ IFile, IProject, IResourceChangeEvent, IResourceChangeListener, ResourcesPlugin }
 import org.eclipse.core.runtime.{ CoreException, FileLocator, IStatus, Platform, Status }
 import org.eclipse.core.runtime.content.IContentTypeSettings
@@ -23,12 +22,12 @@ import org.eclipse.ui.{ IEditorInput, IFileEditorInput, PlatformUI, IPartListene
 import org.eclipse.ui.part.FileEditorInput
 import org.eclipse.ui.plugin.AbstractUIPlugin
 import util.SWTUtils.asyncExec
-
 import org.osgi.framework.BundleContext
-
 import scala.tools.eclipse.javaelements.{ ScalaElement, ScalaSourceFile }
 import scala.tools.eclipse.util.OSGiUtils.pathInBundle
 import scala.tools.eclipse.templates.ScalaTemplateManager
+import org.eclipse.jdt.ui.PreferenceConstants
+import org.eclipse.core.resources.IResourceDelta
 
 object ScalaPlugin {
   var plugin: ScalaPlugin = _
@@ -55,6 +54,7 @@ class ScalaPlugin extends AbstractUIPlugin with IResourceChangeListener with IEl
   def classWizId = wizardId("Class")
   def traitWizId = wizardId("Trait")
   def objectWizId = wizardId("Object")
+  def packageObjectWizId = wizardId("PackageObject")
   def applicationWizId = wizardId("Application")
   def projectWizId = wizardId("Project")
   def netProjectWizId = wizardId("NetProject")
@@ -96,14 +96,15 @@ class ScalaPlugin extends AbstractUIPlugin with IResourceChangeListener with IEl
   val swingSources = pathInBundle(scalaLibBundle, "/lib/scala-swing-src.jar")
 
   lazy val templateManager = new ScalaTemplateManager()
+  lazy val headlessMode = System.getProperty(HEADLESS_TEST) ne null
 
   private val projects = new HashMap[IProject, ScalaProject]
 
   override def start(context: BundleContext) = {
     super.start(context)
 
-    if (System.getProperty(HEADLESS_TEST) eq null) {
-      ResourcesPlugin.getWorkspace.addResourceChangeListener(this, IResourceChangeEvent.PRE_CLOSE | IResourceChangeEvent.POST_CHANGE)
+    if (!headlessMode) {
+      ResourcesPlugin.getWorkspace.addResourceChangeListener(this, IResourceChangeEvent.PRE_CLOSE)
       JavaCore.addElementChangedListener(this)
       PlatformUI.getWorkbench.getEditorRegistry.setDefaultEditor("*.scala", editorId)
       ScalaPlugin.getWorkbenchWindow map (_.getPartService().addPartListener(ScalaPlugin.this))
@@ -163,7 +164,7 @@ class ScalaPlugin extends AbstractUIPlugin with IResourceChangeListener with IEl
       case _ =>
     }
   }
-
+  
   override def elementChanged(event: ElementChangedEvent) {
     import scala.collection.mutable.ListBuffer
     val buff = new ListBuffer[ScalaSourceFile]

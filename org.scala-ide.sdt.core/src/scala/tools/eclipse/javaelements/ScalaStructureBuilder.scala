@@ -38,7 +38,16 @@ trait ScalaStructureBuilder { self : ScalaPresentationCompiler =>
       }
 
     type OverrideInfo = Int
-    val overrideInfos = (new collection.mutable.HashMap[Symbol, OverrideInfo]).withDefaultValue(0)
+//    val overrideInfos = (new collection.mutable.HashMap[Symbol, OverrideInfo]).withDefaultValue(0)
+    // COMPAT: backwards compatible with 2.8. Remove once we drop 2.8 (and use withDefaultValue).
+    val overrideInfos = new collection.mutable.HashMap[Symbol, OverrideInfo] {
+      override def get(key: Symbol) = super.get(key) match {
+        case None => Some(0)
+        case v => v
+      }
+      
+      override def default(sym: Symbol) = 0
+    } 
     
     def fillOverrideInfos(c : Symbol) {
       if (c ne NoSymbol) {
@@ -239,7 +248,8 @@ trait ScalaStructureBuilder { self : ScalaPresentationCompiler =>
             if (!completed) {
               completed = true
               
-              val pkgElem = JavaElementFactory.createPackageDeclaration(compilationUnitBuilder.element.asInstanceOf[JDTCompilationUnit], p.symbol.fullName)
+              val name = if (p.symbol.isEmptyPackage || p.symbol.isRootPackage) "" else p.symbol.fullName
+              val pkgElem = JavaElementFactory.createPackageDeclaration(compilationUnitBuilder.element.asInstanceOf[JDTCompilationUnit], name)
               resolveDuplicates(pkgElem)
               compilationUnitBuilder.addChild(pkgElem)
 
@@ -262,13 +272,14 @@ trait ScalaStructureBuilder { self : ScalaPresentationCompiler =>
       override def resetImportContainer : Unit = currentImportContainer = None
       
       override def addImport(i : Import) : Owner = {
+        i.symbol.initialize // make sure the import tree is attributed
         val prefix = i.expr.symbol.fullName
         val pos = i.pos
 
         def isWildcard(s: ImportSelector) : Boolean = s.name == nme.WILDCARD
 
         def addImport(name : String, isWildcard : Boolean) {
-          val path = prefix+"."+(if(isWildcard) "*" else name)
+          val path = prefix + (if(isWildcard) "" else "." + name)
           
           val (importContainer, importContainerInfo) = currentImportContainer match {
             case Some(ci) => ci
@@ -395,7 +406,8 @@ trait ScalaStructureBuilder { self : ScalaPresentationCompiler =>
       override def addModule(m : ModuleDef) : Owner = {
         val sym = m.symbol
     	val isSynthetic = sym.hasFlag(Flags.SYNTHETIC)
-        val moduleElem = new ScalaModuleElement(element, m.name.toString, isSynthetic)
+        val moduleElem = if(sym.isPackageObject)  new ScalaPackageModuleElement(element, m.name.toString, isSynthetic) 
+          				 else new ScalaModuleElement(element, m.name.toString, isSynthetic)
         resolveDuplicates(moduleElem)
         addChild(moduleElem)
         

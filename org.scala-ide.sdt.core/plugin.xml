@@ -34,12 +34,25 @@
          </enabledWhen>
       </page>
    </extension>
-   <extension
+      <extension
          point="org.eclipse.ui.propertyPages">
       <page
             class="scala.tools.eclipse.codeanalysis.CodeAnalysisPreferencePage"
             id="scala.tools.eclipse.codeanalysis.CodeAnalysisPropertyPage"
             name="Scala Code Analysis">
+         <filter
+               name="nature"
+               value="org.scala-ide.sdt.core.scalanature"/>
+         <enabledWhen>
+         <or> <instanceof value="org.eclipse.jdt.core.IJavaProject"/>
+              <instanceof value="org.eclipse.core.resources.IProject"/>
+         </or>
+         </enabledWhen>
+      </page>
+      <page
+            class="scala.tools.eclipse.properties.OrganizeImportsPreferencesPage"
+            id="scala.tools.eclipse.properties.OrganizeImportsPreferencesPage"
+            name="Scala Organize Imports">
          <filter
                name="nature"
                value="org.scala-ide.sdt.core.scalanature"/>
@@ -81,6 +94,12 @@
             class="scala.tools.eclipse.codeanalysis.CodeAnalysisPreferencePage"
             id="scala.tools.eclipse.codeanalysis.CodeAnalysisPreferencePage"
             name="Code Analysis">
+      </page>            
+      <page
+            category="org.scala-ide.sdt.core.preferences"
+            class="scala.tools.eclipse.properties.OrganizeImportsPreferencesPage"
+            id="scala.tools.eclipse.properties.OrganizeImportsPreferencesPage"
+            name="Organize Imports">
       </page>
    </extension>
 
@@ -275,6 +294,17 @@
             name="Scala Object"
             id="org.scala-ide.sdt.core.wizards.newObject">
             <description>Create a Scala object</description>
+            <selection class="java.lang.Object"/>
+      </wizard>
+      <wizard
+            class="scala.tools.eclipse.wizards.NewPackageObjectWizard"
+            icon="icons/full/etool16/newpackage_object_wiz.gif"
+            finalPerspective="org.scala-ide.sdt.core.perspective"
+            category="org.scala-ide.sdt.core.wizards"
+            project="false"
+            name="Scala Package Object"
+            id="org.scala-ide.sdt.core.wizards.newPackageObject">
+            <description>Create a Scala Package Object</description>
             <selection class="java.lang.Object"/>
       </wizard>
       <wizard
@@ -653,6 +683,9 @@
      <initializer
            class="scala.tools.eclipse.codeanalysis.CodeAnalysisPreferenceInitializer">
      </initializer>
+     <initializer
+           class="scala.tools.eclipse.properties.OrganizeImportsPreferencesInitializer">
+     </initializer>
   </extension>
 
   <extension point="org.eclipse.core.expressions.propertyTesters">
@@ -811,8 +844,8 @@
   <extension
          point="org.eclipse.ui.actionSets">
       <actionSet
-            label="CodingActionSet.label"
-            description="CodingActionSet.description"
+            label="Scala"
+            description="Scala Actions"
             visible="false"
             id="scala.tools.eclipse.refactoring.CodingActionSet">
          <menu
@@ -869,7 +902,7 @@
                tooltip="Organize Imports">
          </action>
          <action
-               class="scala.tools.eclipse.refactoring.RenameAction"
+               class="scala.tools.eclipse.refactoring.rename.RenameAction"
                definitionId="scala.tools.eclipse.refactoring.command.Rename"
                id="scala.tools.eclipse.refactoring.renameAction"
                label="Rename"
@@ -881,27 +914,18 @@
                </objectClass>
             </enablement>
          </action>
-	 <!--<action
-               class="scala.tools.eclipse.refactoring.ShowReferencesAction"
-               definitionId="scala.tools.eclipse.refactoring.command.ShowReferences"
-               id="scala.tools.eclipse.refactoring.showReferencesAction"
-               label="Show References"
-               menubarPath="scala.tools.eclipse.refactoring.refactoringMenu/scala.tools.eclipse.refactoring.sourceGeneratorGroup"
-               tooltip="Show References">
-            <enablement>
-               <objectClass
-                     name="org.eclipse.jface.text.TextSelection">
-               </objectClass>
-            </enablement>
-	</action>-->
          <action
-               class="scala.tools.eclipse.quickfix.AddImportAction"
-               definitionId="scala.tools.eclipse.refactoring.command.AddImport"
-               id="scala.tools.eclipse.refactoring.addImportAction"
-               label="Add Import"
-               tooltip="Add Import">
-         </action>
-              </actionSet>
+               class="scala.tools.eclipse.actions.RunSelectionAction"
+               definitionId="scala.tools.eclipse.interpreter.RunSelection"
+               disabledIcon="icons/full/dtool16/run_interpreter.gif"
+               hoverIcon="icons/full/etool16/run_interpreter.gif"
+               icon="icons/full/etool16/run_interpreter.gif"
+               id="scala.tools.eclipse.interpreter.runSelectionAction"
+               label="Run Selection in Scala Interpreter"
+               toolbarPath="org.eclipse.debug.ui.launchActionSet/debug"
+               tooltip="Run Selection in Scala Interpreter">
+         </action>         
+     </actionSet>
    </extension>
 
    <extension
@@ -910,6 +934,11 @@
          description="Refactorings"
          id="scala.tools.eclipse.refactoring.commands.refactoring"
          name="Refactor - Scala"/>
+      <command
+         name="Refactor Quick Menu"
+         description="Shows the refactor quick menu"
+         categoryId="scala.tools.eclipse.refactoring.commands.refactoring"
+         id="scala.tools.eclipse.refactoring.commands.quickMenu"/>
       <command
          categoryId="scala.tools.eclipse.refactoring.commands.refactoring"
          id="scala.tools.eclipse.refactoring.command.ExtractMethod"
@@ -930,14 +959,10 @@
          categoryId="scala.tools.eclipse.refactoring.commands.refactoring"
          id="scala.tools.eclipse.refactoring.command.Rename"
          name="Rename"/>
-      <!--<command
-         categoryId="scala.tools.eclipse.refactoring.commands.refactoring"
-         id="scala.tools.eclipse.refactoring.command.ShowReferences"
-	 name="Show References"/>-->
       <command
-         categoryId="scala.tools.eclipse.refactoring.commands.refactoring"
-         id="scala.tools.eclipse.refactoring.command.AddImport"
-         name="Add Import"/>
+         categoryId="org.eclipse.debug.ui.category.run"
+         id="scala.tools.eclipse.interpreter.RunSelection"
+         name="Send Selection to Scala Interpreter"/>
 </extension>
 
    <extension point="org.eclipse.ui.contexts">
@@ -948,7 +973,14 @@
    </extension>
 
 <extension
-      point="org.eclipse.ui.bindings"> <!-- M1 == Ctrl, M2 == Shift M3 == Alt -->
+      point="org.eclipse.ui.bindings"> <!-- M1 == Ctrl/Cmd, M2 == Shift M3 == Alt -->
+   <!-- Bindings to be replaced with Mac bindings like in the JDT (see http://dev.eclipse.org/viewcvs/viewvc.cgi/org.eclipse.jdt.ui/plugin.xml) -->
+   <sequenceModifier find="M2+M3" replace="M1+M3" platforms="cocoa,carbon" />
+   <key
+         commandId="scala.tools.eclipse.refactoring.commands.quickMenu"
+         schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+         contextId="scala.tools.eclipse.scalaEditorScope"
+         sequence="M2+M3+T"/> 
    <key
    		 commandId="scala.tools.eclipse.refactoring.command.ExtractMethod"
    		 schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
@@ -969,16 +1001,18 @@
    		 schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
    		 contextId="scala.tools.eclipse.scalaEditorScope"
    		 sequence="M2+M3+R"/>
+   </extension>
+   <extension point="org.eclipse.ui.bindings"> <!-- Cross-platform bindings -->
    <key
    		 commandId="scala.tools.eclipse.refactoring.command.OrganizeImports"
    		 schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
    		 contextId="scala.tools.eclipse.scalaEditorScope"
    		 sequence="M1+M2+O"/>
    <key
-   		 commandId="scala.tools.eclipse.refactoring.command.AddImport"
-   		 schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
-   		 contextId="scala.tools.eclipse.scalaEditorScope"
-   		 sequence="M1+M2+M"/>
+       commandId="scala.tools.eclipse.interpreter.RunSelection"
+       schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+       contextId="scala.tools.eclipse.scalaEditorScope"
+       sequence="M1+M2+X"/>
 
    </extension>
    <extension
@@ -1013,13 +1047,21 @@
       <partition type="__dftl_partition_content_type"/>
    </javaCompletionProposalComputer>
  </extension>
+   <extension
+       id="scala_completions"
+       name="Scala Completions"
+       point="org.eclipse.jdt.ui.javaCompletionProposalComputer">
+    <proposalCategory
+          icon="icons/scala.png">
+    </proposalCategory>
+ </extension>
  <extension
-       id="scala.tools.eclipse.completion.ScalaCompletionProposalComputer"
+       id="scala.tools.eclipse.ui.ScalaCompletionProposalComputer"
        name="Scala Completion Proposal Computer"
        point="org.eclipse.jdt.ui.javaCompletionProposalComputer">
     <javaCompletionProposalComputer
-          categoryId="org.eclipse.jdt.ui.javaAllProposalCategory"
-          class="scala.tools.eclipse.completion.ScalaCompletionProposalComputer">
+          categoryId="org.scala-ide.sdt.core.scala_completions"
+          class="scala.tools.eclipse.ui.ScalaCompletionProposalComputer">
        <partition
              type="__dftl_partition_content_type">
        </partition>
@@ -1079,4 +1121,37 @@
           markerType="org.scala-ide.sdt.core.unnecessaryPatternMatch">
     </markerResolutionGenerator>
  </extension>
+<extension
+       id="scala.tools.eclipse.consoleView"
+       point="org.eclipse.ui.views">
+    <view
+          allowMultiple="true"
+          class="scala.tools.eclipse.interpreter.ReplConsoleView"
+          icon="icons/full/etool16/scala_app.gif"
+          id="org.scala-ide.sdt.core.consoleView"
+          name="Scala Interpreter"
+          restorable="false">
+    </view>
+ </extension>
+ <extension
+       id="scala_java_completions"
+       name="Scala Completions (Java sources)"
+       point="org.eclipse.jdt.ui.javaCompletionProposalComputer">
+    <proposalCategory
+          icon="icons/scala.png">
+    </proposalCategory>
+ </extension>
+ <extension
+       id="JavaTraitMembersCompletions"
+       name="Scala Trait Member Completions for Java"
+       point="org.eclipse.jdt.ui.javaCompletionProposalComputer">
+    <javaCompletionProposalComputer
+          activate="false"
+          categoryId="org.scala-ide.sdt.core.scala_java_completions"
+          class="scala.tools.eclipse.completion.ScalaJavaCompletionProposalComputer">
+       <partition
+             type="__dftl_partition_content_type">
+       </partition>
+    </javaCompletionProposalComputer>
+ </extension> 
 </plugin>

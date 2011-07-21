@@ -54,41 +54,26 @@ class DiagnosticDialog(shell: Shell) extends Dialog(shell) {
     
 //  protected val markOccurrencesData = new BoolWidgetData(PreferenceConstants.EDITOR_MARK_OCCURRENCES, false)
   protected val completionData = new BoolWidgetData("", true) {      
-    val mylynCompletion = "org.eclipse.mylyn.java.ui.javaAllProposalCategory"
-    val javaCompletion = "org.eclipse.jdt.ui.javaAllProposalCategory"
+    val scalaCompletion = "org.scala-ide.sdt.core.scala_completions"
+    val scalaJavaCompletion = "org.scala-ide.sdt.core.scala_java_completions"
       
     value = getStoredValue // initialize from preference store
     
     def getStoredValue: Boolean = {
       val currentExcluded: Array[String] = PreferenceConstants.getExcludedCompletionProposalCategories
-      currentExcluded.contains(mylynCompletion) && !currentExcluded.contains(javaCompletion)
+      !(currentExcluded.contains(scalaCompletion) || currentExcluded.contains(scalaJavaCompletion))
     }
-    
-    val defaultExcluded = Array(
-        mylynCompletion,
-        "org.eclipse.jdt.ui.javaNoTypeProposalCategory",
-        "org.eclipse.jdt.ui.javaTypeProposalCategory",
-        "org.eclipse.jdt.ui.swtProposalCategory",
-        "org.eclipse.pde.api.tools.ui.apitools_proposal_category",
-        "org.eclipse.jdt.ui.templateProposalCategory")
-        
-    val defaultOrdering = List(
-        javaCompletion + ":0", 
-        mylynCompletion + ":65542",
-        "org.eclipse.jdt.ui.templateProposalCategory:1", 
-        "org.eclipse.jdt.ui.javaTypeProposalCategory:65537", 
-        "org.eclipse.jdt.ui.javaNoTypeProposalCategory:65538", 
-        "org.eclipse.jdt.ui.textProposalCategory:65539", 
-        "org.eclipse.pde.api.tools.ui.apitools_proposal_category:65540", 
-        "org.eclipse.jdt.ui.swtProposalCategory:65541").mkString("\0")
     
     override def saveToStore {
+      updateValue
       if (value && !getStoredValue) {
-        PreferenceConstants.setExcludedCompletionProposalCategories(defaultExcluded)
-        prefStore.setValue(PreferenceConstants.CODEASSIST_CATEGORY_ORDER, defaultOrdering)
+        val currentExcluded: Array[String] = PreferenceConstants.getExcludedCompletionProposalCategories
+        PreferenceConstants.setExcludedCompletionProposalCategories(
+            currentExcluded.filterNot { cat => cat == scalaCompletion || cat == scalaJavaCompletion })
       }
     }
-  }     
+  }
+  
   protected val autoActivationData = new BoolWidgetData(PreferenceConstants.CODEASSIST_AUTOACTIVATION, true)
   protected val activationDelayData = new IntWidgetData(PreferenceConstants.CODEASSIST_AUTOACTIVATION_DELAY, 500)
   
@@ -157,7 +142,7 @@ class DiagnosticDialog(shell: Shell) extends Dialog(shell) {
     control.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, true))
     control.setLayout(new GridLayout)
 
-    def newGroup(name: String, theParent: Composite = control, layout: GridLayout = new GridLayout(2, false)): Group = {
+    def newGroup(name: String, theParent: Composite, layout: GridLayout = new GridLayout(2, false)): Group = {
       val group = new Group(theParent, SWT.SHADOW_NONE)
       group.setText(name)
       group.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true))
@@ -165,7 +150,7 @@ class DiagnosticDialog(shell: Shell) extends Dialog(shell) {
       group
     }
     
-    val weavingGroup = newGroup("JDT Weaving")    
+    val weavingGroup = newGroup("JDT Weaving", control)    
     this.weavingButton = newCheckboxButton(weavingGroup, "Enable JDT weaving (required for Scala plugin)")
     weavingButton.setSelection(configurer.isWeaving)
     weavingButton.setEnabled(!configurer.isWeaving) // disable the control if weaving is already enabled
