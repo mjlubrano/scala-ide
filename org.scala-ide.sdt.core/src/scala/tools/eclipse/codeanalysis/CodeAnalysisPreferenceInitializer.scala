@@ -12,10 +12,6 @@ import org.eclipse.core.runtime.preferences.{ AbstractPreferenceInitializer, Def
 import scala.tools.eclipse.ScalaPlugin
 import CodeAnalysisPreferences._
 
-/**
- * This is responsible for initializing Scala Compiler
- * Preferences to their default values.
- */
 class CodeAnalysisPreferenceInitializer extends AbstractPreferenceInitializer {
   
   /** Actually initializes preferences */
@@ -29,7 +25,6 @@ class CodeAnalysisPreferenceInitializer extends AbstractPreferenceInitializer {
           node.put(enabledKey(id), "true")
           node.put(severityKey(id), String.valueOf(defaultSeverity))
       }
-      
     }
   }
 }

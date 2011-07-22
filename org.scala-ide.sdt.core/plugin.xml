@@ -1117,7 +1117,7 @@
  <extension
        point="org.eclipse.ui.ide.markerResolution">
     <markerResolutionGenerator
-          class="scala.tools.eclipse.codeanalysis.quickfixes.MarkerResolutionGenerator"
+          class="scala.tools.eclipse.codeanalysis.quickfixes.UnnecessaryPatternMatchMarkerResolutionGenerator"
           markerType="org.scala-ide.sdt.core.unnecessaryPatternMatch">
     </markerResolutionGenerator>
  </extension>
